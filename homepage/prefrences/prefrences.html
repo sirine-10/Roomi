@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prefrences Form</title>
+    <link rel="stylesheet" href="prefrences.css">
+</head>
+<body>
+    
+    <div class="container">
+
+
+
+        <h1>Choose Your Role</h1>
+        <div class="role-selection">
+            <button id="landlord-btn" class="role-btn">Landlord</button>
+            <button id="roommate-btn" class="role-btn">Roommate</button>
+        </div>
+
+        <div id="landlord-form" class="form hidden">
+            <h2>Post a Property</h2>
+            <label for="house-photo">House Photo:</label>
+            <input type="file" id="house-photo" class="input-field">
+            <label for="price" >Price:</label>
+            <input type="number" id="price" class="input-field" placeholder="Price per month">
+            <label for="rules">Rules:</label>
+            <textarea  id="rules" class="input-field" placeholder="Enter rules (e.g. No smoking, No pets)"></textarea>
+
+             <label for="max-people">Max People:</label>
+            <input type="number" id="max-people" class="input-field" placeholder="Max number of people">
+             <label for="gender" >Preferred Gender:</label>
+             <select id="gender" class="input-field">
+                <option value="Any">Any</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+              <label for="drinking">Drinking Allowed?</label>
+              <select name="input-field" id="drinking">
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+              </select>
+              <label for="location">Location:</label>
+              <input type="text" id="location" class="input-field" placeholder="Location (auto-detected)" readonly>
+              <button id="get-location" class="role-btn">Detect Location</button>
+             
+            </div>
+
+
+
+            <div id="roommate-form" class="form hidden">
+                <h2>Roommate Preferences</h2>
+                <label for="preferred-gender">Preferred Gender:</label>
+                <select id="preferred-gender" class="input-field">
+                  <option value="Any">Any</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                </select>
+                <label for="userage">Your Age:</label>
+                <input type="text" id="userage" class="input-field" placeholder="Enter your age">
+                <label for="age">Age Range:</label>
+                <input type="text" id="age" class="input-field" placeholder="Enter preferred age range">
+                <label for="smoking-roommate">Smoking Allowed?</label>
+                <select id="smoking-roommate" class="input-field">
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                <label for="drinking-roommate">Drinking Allowed?</label>
+                <select id="drinking-roommate" class="input-field">
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                <label for="roommate-rules">Rules:</label>
+                <textarea id="roommate-rules" class="input-field" placeholder="Enter your preferences and rules"></textarea>
+                
+
+              
+              
+
+        </div>
+
+        <button  id="submit-preferences"  class="submit-btn">Submit Prefrences</button>
+    </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    
+       
+        const firebaseConfig = {
+          apiKey: "AIzaSyBXVtqhEzteztF2dM29AxyPtH7v1pz0nKo",
+          authDomain: "roomi-1ceb3.firebaseapp.com",
+          projectId: "roomi-1ceb3",
+          storageBucket: "roomi-1ceb3.firebasestorage.app",
+          messagingSenderId: "200210916462",
+          appId: "1:200210916462:web:3d8170be3115a8adf2f27f",
+          measurementId: "G-G1234NWHFL"
+        };
+    
+       
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+    
+     
+        document.getElementById('landlord-btn').addEventListener('click', function() {
+          document.getElementById('landlord-form').classList.remove('hidden');
+          document.getElementById('roommate-form').classList.add('hidden');
+        });
+    
+        document.getElementById('roommate-btn').addEventListener('click', function() {
+          document.getElementById('roommate-form').classList.remove('hidden');
+          document.getElementById('landlord-form').classList.add('hidden');
+        });
+    
+        
+        document.getElementById('get-location').addEventListener('click', function() {
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function(position) {
+              const latitude = position.coords.latitude;
+              const longitude = position.coords.longitude;
+              document.getElementById('location').value = `Lat: ${latitude}, Lon: ${longitude}`;
+            }, function(error) {
+              alert('Unable to retrieve location. Please allow location access.');
+            });
+          } else {
+            alert('Geolocation is not supported by this browser.');
+          }
+        });
+    
+       document.getElementById('get-location').classList.remove('hidden');
+    
+       
+        document.getElementById('submit-preferences').addEventListener('click', function(e) {
+          e.preventDefault();
+    
+          const user = auth.currentUser;
+          if (!user) {
+            alert("Please log in first.");
+            return;
+          }
+    
+          const isLandlord = !document.getElementById('landlord-form').classList.contains('hidden');
+          const isRoommate = !document.getElementById('roommate-form').classList.contains('hidden');
+    
+          let dataToSave = {};
+    
+          if (isLandlord) {
+            dataToSave = {
+              role: "landlord",
+              price: document.getElementById('price').value,
+              rules: document.getElementById('rules').value,
+              maxPeople: document.getElementById('max-people').value,
+              preferredGender: document.getElementById('gender').value,
+              drinkingAllowed: document.getElementById('drinking').value,
+              location: document.getElementById('location').value,
+             
+            };
+          } else if (isRoommate) {
+            dataToSave = {
+              role: "roommate",
+              preferredGender: document.getElementById('preferred-gender').value,
+              ageRange: document.getElementById('age').value,
+              smokingAllowed: document.getElementById('smoking-roommate').value,
+              drinkingAllowed: document.getElementById('drinking-roommate').value,
+              roommateRules: document.getElementById('roommate-rules').value,
+             
+              userage:document.getElementById("userage").value,
+             
+            };
+          } else {
+            alert("Please select a role first.");
+            return;
+          }
+    
+          setDoc(doc(db, "users", user.uid), {
+            preferences: dataToSave
+          }, { merge: true })
+          .then(() => {
+            alert("Preferences saved successfully!");
+            window.location.href="../dashboard/profile.html"
+          })
+          .catch((error) => {
+            console.error("Error saving preferences:", error);
+            alert("Something went wrong while saving.");
+          });
+        });
+      </script>
+     
+    <script src="prefrences.js" defer></script>
+      <script src="firebase.js"></script>
+</body>
+</html>
